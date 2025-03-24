@@ -1,0 +1,13 @@
+streamlit
+pandas
+matplotlib
+numpy
+beautifulsoup4
+selenium
+vaderSentiment
+tqdm
+transformers
+torch
+scikit-learn
+webdriver-manager
+python-dateutil
