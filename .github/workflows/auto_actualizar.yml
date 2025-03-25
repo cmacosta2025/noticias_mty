@@ -25,7 +25,7 @@ jobs:
 
     - name: ⚙️ Ejecutar notebook de actualización
       run: |
-        jupyter nbconvert --execute --inplace noticias_mty_11.ipynb
+        jupyter nbconvert --execute --inplace noticias_mty_11_fixed.ipynb
 
     - name: 📤 Subir cambios si los hay
       run: |
