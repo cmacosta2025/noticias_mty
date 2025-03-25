@@ -1,0 +1,36 @@
+name: 🔁 Actualizar Noticias Diario
+
+on:
+  schedule:
+    - cron: '0 11 * * *'  # Todos los días a las 11am UTC (5am CDMX)
+  workflow_dispatch:      # También se puede correr manualmente
+
+jobs:
+  ejecutar:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Clonar el repo
+      uses: actions/checkout@v3
+
+    - name: 🐍 Instalar Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: 📦 Instalar requerimientos
+      run: |
+        pip install -r requirements.txt
+        pip install nbconvert ipykernel
+
+    - name: ⚙️ Ejecutar notebook de actualización
+      run: |
+        jupyter nbconvert --execute --inplace noticias_mty_11.ipynb
+
+    - name: 📤 Subir cambios si los hay
+      run: |
+        git config --global user.email "action@github.com"
+        git config --global user.name "GitHub Actions"
+        git add .
+        git commit -m "🔄 Actualización automática de noticias [$(date +'%Y-%m-%d')]" || echo "No hay cambios"
+        git push
