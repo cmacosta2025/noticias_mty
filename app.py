@@ -10,13 +10,16 @@ PALETA_COLORES = [
     "#264653", "#FF6F61", "#6A0572", "#FF9F1C", "#A6032F"
 ]
 EMOCIONES = ["joy", "sadness", "surprise", "anger", "fear", "disgust"]
+TRADUCIR_EMOCIONES = {
+    "joy": "Alegría", "sadness": "Tristeza", "surprise": "Sorpresa",
+    "anger": "Enojo", "fear": "Miedo", "disgust": "Disgusto"
 TRADUCIR_SENTIMIENTO = {"🔴": "Negativo", "🟡": "Neutro", "🟢": "Positivo"}
 COLORES_LINEAS = {"🔴": "#E63946", "🟡": "#F4D35E", "🟢": "#2A9D8F"}
 
 # ---------------------- CARGAR DATOS ----------------------
 @st.cache_data(show_spinner=False)
 def load_data():
-    df = pd.read_csv("noticias_final.csv")
+    df = pd.read_csv("noticias_final_2.csv")
     df["fecha"] = pd.to_datetime(df["fecha"], format="%Y-%m-%d", errors="coerce")
     return df
 
