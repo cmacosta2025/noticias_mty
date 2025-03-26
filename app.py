@@ -38,7 +38,7 @@ df = df.sort_values("fecha", ascending=False)
 
 # ---------------------- FILTROS ----------------------
 st.sidebar.header("📅 Filtro de Temporalidad")
-hoy = datetime.now().date()
+hoy = datetime.now()
 opciones = {
     "Hoy": hoy,
     "Últimos 7 días": hoy - timedelta(days=7),
@@ -48,7 +48,11 @@ opciones = {
 }
 seleccion = st.sidebar.selectbox("Selecciona un periodo:", list(opciones.keys()))
 if opciones[seleccion]:
-    df = df[df["fecha"].dt.date >= opciones[seleccion]]
+    fecha_min = pd.to_datetime(opciones[seleccion])
+    df = df[df["fecha"] >= fecha_min]
+
+# Diagnóstico rápido para validar el filtro
+st.write(f"📅 Fechas después de filtro: {df['fecha'].min().date()} → {df['fecha'].max().date()}")
 
 st.sidebar.header("📂 Categoría")
 categoria = st.sidebar.radio("Categoría:", ["Gobierno", "Alcalde", "Congreso", "Seguridad"], horizontal=True)
@@ -81,21 +85,14 @@ st.markdown("""
     border-radius: 10px;
     margin-bottom: 20px;
 }
-.carrusel-container {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: 1rem;
-    padding-bottom: 1rem;
-}
 .noticia-card {
-    flex: 0 0 auto;
-    width: 280px;
+    width: 100%;
     background-color: #f9f9f9;
     padding: 1rem;
     border-radius: 10px;
     box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
     font-family: sans-serif;
+    margin-bottom: 1rem;
 }
 .noticia-card h4 { font-size: 15px; }
 .noticia-card p { font-size: 13px; color: #333; }
@@ -105,12 +102,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 st.markdown('<div class="banner">Noticias del Gobierno de Monterrey</div>', unsafe_allow_html=True)
 
-# ---------------------- CARRUSEL ----------------------
-st.markdown('<div class="carrusel-container">', unsafe_allow_html=True)
-for _, row in df.iterrows():
+# ---------------------- NOTICIAS EN DOS COLUMNAS ----------------------
+st.markdown("## 📰 Noticias Recientes")
+col1, col2 = st.columns(2)
+for i, (_, row) in enumerate(df.iterrows()):
     fecha_str = row["fecha"].strftime("%Y-%m-%d")
     hashtag = row["hashtag_diccionario"] if pd.notnull(row["hashtag_diccionario"]) else ""
-    st.markdown(f"""
+    card_html = f"""
         <div class="noticia-card">
             <h4>{row['sentimiento']} {row['titulo']}</h4>
             <p class="fecha">{fecha_str}</p>
@@ -118,8 +116,9 @@ for _, row in df.iterrows():
             <p class="hashtag">{hashtag}</p>
             <a href="{row['url']}" target="_blank">Leer más</a>
         </div>
-    """, unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
+    """
+    with (col1 if i % 2 == 0 else col2):
+        st.markdown(card_html, unsafe_allow_html=True)
 
 # ---------------------- GRÁFICAS ----------------------
 st.subheader("📊 Análisis de Sentimientos")
@@ -149,7 +148,8 @@ if seleccion in ["Últimos 90 días", "Histórico"]:
             fig3, ax3 = plt.subplots(figsize=(7, 3.5))
             for i, emocion in enumerate(EMOCIONES):
                 if emocion in diario_emociones.columns:
-                    ax3.plot(diario_emociones.index, diario_emociones[emocion], label=emocion, color=PALETA_COLORES[i])
+                    etiqueta = TRADUCIR_EMOCIONES.get(emocion, emocion)
+                    ax3.plot(diario_emociones.index, diario_emociones[emocion], label=etiqueta, color=PALETA_COLORES[i])
             ax3.legend(title="Emoción", fontsize=9)
             ax3.set_ylabel("Nivel Promedio")
             ax3.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
@@ -179,8 +179,9 @@ else:
     with col2:
         prom = {e: df[e].mean() for e in EMOCIONES if e in df.columns}
         if prom:
+            etiquetas_es = [TRADUCIR_EMOCIONES.get(e, e) for e in prom.keys()]
             fig2, ax2 = plt.subplots(figsize=(4, 3))
-            ax2.bar(prom.keys(), prom.values(), color=PALETA_COLORES[:len(prom)])
+            ax2.bar(etiquetas_es, prom.values(), color=PALETA_COLORES[:len(prom)])
             ax2.set_title("Promedio de Emociones", fontsize=11)
             ax2.set_ylabel("Nivel Promedio", fontsize=9)
             ax2.set_xlabel("Emoción", fontsize=9)
