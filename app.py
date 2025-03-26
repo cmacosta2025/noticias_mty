@@ -12,7 +12,8 @@ PALETA_COLORES = [
 EMOCIONES = ["joy", "sadness", "surprise", "anger", "fear", "disgust"]
 TRADUCIR_EMOCIONES = {
     "joy": "Alegría", "sadness": "Tristeza", "surprise": "Sorpresa",
-    "anger": "Enojo", "fear": "Miedo", "disgust": "Disgusto"}
+    "anger": "Enojo", "fear": "Miedo", "disgust": "Disgusto"
+}
 TRADUCIR_SENTIMIENTO = {"🔴": "Negativo", "🟡": "Neutro", "🟢": "Positivo"}
 COLORES_LINEAS = {"🔴": "#E63946", "🟡": "#F4D35E", "🟢": "#2A9D8F"}
 
@@ -40,25 +41,22 @@ df = df.sort_values("fecha", ascending=False)
 st.sidebar.header("📅 Filtro de Temporalidad")
 hoy = datetime.now()
 opciones = {
-    "Hoy": hoy.replace(hour=0, minute=0, second=0, microsecond=0),
+    "Hoy": hoy,
     "Últimos 7 días": hoy - timedelta(days=7),
     "Últimos 30 días": hoy - timedelta(days=30),
     "Últimos 90 días": hoy - timedelta(days=90),
-    "Histórico": None
+    "Histórico": datetime(2025, 1, 1)
 }
 seleccion = st.sidebar.selectbox("Selecciona un periodo:", list(opciones.keys()))
+
 if opciones[seleccion]:
-    fecha_min = opciones[seleccion]
-    df = df[df["fecha"] >= fecha_min]
+    fecha_min = opciones[seleccion].date()
+    df = df[df["fecha"].dt.date >= fecha_min]
 
-# Diagnóstico de fechas tras filtro
-if not df.empty:
-    st.write(f"📅 Noticias filtradas: {df['fecha'].min().date()} → {df['fecha'].max().date()}")
-    st.write(f"🧮 Total de noticias mostradas: {len(df)}")
-else:
-    st.warning("⚠️ No hay noticias para este periodo.")
+st.write(f"📅 Noticias filtradas: {df['fecha'].min().date()} → {df['fecha'].max().date()}")
+st.write(f"🧮 Total de noticias mostradas: {len(df)}")
 
-# ---------------------- FILTROS ADICIONALES ----------------------
+# ---------------------- CATEGORÍA ----------------------
 st.sidebar.header("📂 Categoría")
 categoria = st.sidebar.radio("Categoría:", ["Gobierno", "Alcalde", "Congreso", "Seguridad"], horizontal=True)
 if categoria == "Gobierno":
@@ -91,7 +89,8 @@ st.markdown("""
     margin-bottom: 20px;
 }
 .noticia-card {
-    width: 100%;
+    flex: 0 0 auto;
+    width: 280px;
     background-color: #f9f9f9;
     padding: 1rem;
     border-radius: 10px;
@@ -165,6 +164,8 @@ if seleccion in ["Últimos 90 días", "Histórico"]:
             st.pyplot(fig3)
         else:
             st.info("No hay datos de emociones para este periodo.")
+    else:
+        st.info("Las emociones aún no están disponibles en este conjunto.")
 else:
     col1, col2 = st.columns(2)
 
@@ -173,7 +174,6 @@ else:
         etiquetas = [TRADUCIR_SENTIMIENTO.get(k, k) for k in ["🔴", "🟡", "🟢"]]
         valores = [conteos.get("🔴", 0), conteos.get("🟡", 0), conteos.get("🟢", 0)]
         colores = [COLORES_LINEAS[k] for k in ["🔴", "🟡", "🟢"]]
-
         if sum(valores) > 0:
             fig, ax = plt.subplots(figsize=(3.2, 3.2))
             ax.pie(valores, labels=etiquetas, autopct="%1.1f%%", colors=colores, startangle=90, textprops={'fontsize': 9})
@@ -186,12 +186,12 @@ else:
         prom = {e: df[e].mean() for e in EMOCIONES if e in df.columns}
         if prom:
             etiquetas_es = [TRADUCIR_EMOCIONES.get(e, e) for e in prom.keys()]
-            fig2, ax2 = plt.subplots(figsize=(4, 3))
+            fig2, ax2 = plt.subplots(figsize=(6, 3))  # ← Más ancho
             ax2.bar(etiquetas_es, prom.values(), color=PALETA_COLORES[:len(prom)])
             ax2.set_title("Promedio de Emociones", fontsize=11)
             ax2.set_ylabel("Nivel Promedio", fontsize=9)
             ax2.set_xlabel("Emoción", fontsize=9)
-            ax2.tick_params(axis='x', labelsize=9)
+            ax2.tick_params(axis='x', labelrotation=15, labelsize=9)
             ax2.tick_params(axis='y', labelsize=8)
             st.pyplot(fig2)
         else:
