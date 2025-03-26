@@ -40,7 +40,7 @@ df = df.sort_values("fecha", ascending=False)
 st.sidebar.header("📅 Filtro de Temporalidad")
 hoy = datetime.now()
 opciones = {
-    "Hoy": hoy,
+    "Hoy": hoy.replace(hour=0, minute=0, second=0, microsecond=0),
     "Últimos 7 días": hoy - timedelta(days=7),
     "Últimos 30 días": hoy - timedelta(days=30),
     "Últimos 90 días": hoy - timedelta(days=90),
@@ -48,12 +48,17 @@ opciones = {
 }
 seleccion = st.sidebar.selectbox("Selecciona un periodo:", list(opciones.keys()))
 if opciones[seleccion]:
-    fecha_min = pd.to_datetime(opciones[seleccion])
+    fecha_min = opciones[seleccion]
     df = df[df["fecha"] >= fecha_min]
 
-# Diagnóstico rápido para validar el filtro
-st.write(f"📅 Fechas después de filtro: {df['fecha'].min().date()} → {df['fecha'].max().date()}")
+# Diagnóstico para verificar fechas filtradas
+if not df.empty:
+    st.write(f"📅 Noticias filtradas: {df['fecha'].min().date()} → {df['fecha'].max().date()}")
+    st.write(f"🧮 Total de noticias mostradas: {len(df)}")
+else:
+    st.warning("⚠️ No hay noticias para este periodo.")
 
+# ---------------------- FILTROS ADICIONALES ----------------------
 st.sidebar.header("📂 Categoría")
 categoria = st.sidebar.radio("Categoría:", ["Gobierno", "Alcalde", "Congreso", "Seguridad"], horizontal=True)
 if categoria == "Gobierno":
@@ -117,79 +122,12 @@ for i, (_, row) in enumerate(df.iterrows()):
             <a href="{row['url']}" target="_blank">Leer más</a>
         </div>
     """
-    with (col1 if i % 2 == 0 else col2):
-        st.markdown(card_html, unsafe_allow_html=True)
-
-# ---------------------- GRÁFICAS ----------------------
-st.subheader("📊 Análisis de Sentimientos")
-
-if seleccion in ["Últimos 90 días", "Histórico"]:
-    st.markdown("#### Sentimiento diario")
-    diario = df.groupby(["fecha", "sentimiento"]).size().unstack(fill_value=0).sort_index()
-    if not diario.empty:
-        fig1, ax1 = plt.subplots(figsize=(7, 3.5))
-        for emoji in ["🔴", "🟡", "🟢"]:
-            if emoji in diario.columns:
-                ax1.plot(diario.index, diario[emoji], label=TRADUCIR_SENTIMIENTO[emoji], color=COLORES_LINEAS[emoji])
-        ax1.set_ylabel("Número de Noticias")
-        ax1.legend(title="Sentimiento", fontsize=9)
-        ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-        ax1.tick_params(axis='x', labelrotation=45, labelsize=8)
-        st.pyplot(fig1)
+    if i % 2 == 0:
+        with col1:
+            st.markdown(card_html, unsafe_allow_html=True)
     else:
-        st.info("No hay datos de sentimiento para este periodo.")
-
-    st.markdown("#### Emociones diarias")
-    if set(EMOCIONES).issubset(df.columns):
-        emociones_df = df[["fecha"] + EMOCIONES]
-        emociones_df = emociones_df.dropna(subset=EMOCIONES, how="all")
-        diario_emociones = emociones_df.groupby("fecha")[EMOCIONES].mean().sort_index()
-        if not diario_emociones.empty:
-            fig3, ax3 = plt.subplots(figsize=(7, 3.5))
-            for i, emocion in enumerate(EMOCIONES):
-                if emocion in diario_emociones.columns:
-                    etiqueta = TRADUCIR_EMOCIONES.get(emocion, emocion)
-                    ax3.plot(diario_emociones.index, diario_emociones[emocion], label=etiqueta, color=PALETA_COLORES[i])
-            ax3.legend(title="Emoción", fontsize=9)
-            ax3.set_ylabel("Nivel Promedio")
-            ax3.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-            ax3.tick_params(axis='x', labelrotation=45, labelsize=8)
-            st.pyplot(fig3)
-        else:
-            st.info("No hay datos de emociones para este periodo.")
-    else:
-        st.info("Las emociones aún no están disponibles en este conjunto.")
-else:
-    col1, col2 = st.columns(2)
-
-    with col1:
-        conteos = df["sentimiento"].value_counts()
-        etiquetas = [TRADUCIR_SENTIMIENTO.get(k, k) for k in ["🔴", "🟡", "🟢"]]
-        valores = [conteos.get("🔴", 0), conteos.get("🟡", 0), conteos.get("🟢", 0)]
-        colores = [COLORES_LINEAS[k] for k in ["🔴", "🟡", "🟢"]]
-
-        if sum(valores) > 0:
-            fig, ax = plt.subplots(figsize=(3.2, 3.2))
-            ax.pie(valores, labels=etiquetas, autopct="%1.1f%%", colors=colores, startangle=90, textprops={'fontsize': 9})
-            ax.set_title("Sentimiento Global", fontsize=11)
-            st.pyplot(fig)
-        else:
-            st.info("No hay datos de sentimiento para este periodo.")
-
-    with col2:
-        prom = {e: df[e].mean() for e in EMOCIONES if e in df.columns}
-        if prom:
-            etiquetas_es = [TRADUCIR_EMOCIONES.get(e, e) for e in prom.keys()]
-            fig2, ax2 = plt.subplots(figsize=(4, 3))
-            ax2.bar(etiquetas_es, prom.values(), color=PALETA_COLORES[:len(prom)])
-            ax2.set_title("Promedio de Emociones", fontsize=11)
-            ax2.set_ylabel("Nivel Promedio", fontsize=9)
-            ax2.set_xlabel("Emoción", fontsize=9)
-            ax2.tick_params(axis='x', labelsize=9)
-            ax2.tick_params(axis='y', labelsize=8)
-            st.pyplot(fig2)
-        else:
-            st.info("No hay datos de emociones para este periodo.")
+        with col2:
+            st.markdown(card_html, unsafe_allow_html=True)
 
 # ---------------------- FOOTER ----------------------
 st.sidebar.info("Desarrollado por la Dirección de Planeación, Enlace y Proyectos Estratégicos")
