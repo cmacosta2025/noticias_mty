@@ -199,3 +199,17 @@ else:
 
 # ---------------------- FOOTER ----------------------
 st.sidebar.info("Desarrollado por la Dirección de Planeación, Enlace y Proyectos Estratégicos")
+
+#------
+st.markdown("### 🔍 Diagnóstico de noticias después del 12/03/2025")
+
+diagnostico = df[df["fecha"] > pd.to_datetime("2025-03-12")]
+st.write(f"📰 Noticias después del 12/03/2025: {len(diagnostico)}")
+
+st.write("📊 Conteo por pestaña:")
+st.write(diagnostico["pestaña"].value_counts(dropna=False))
+
+st.write("📊 Conteo por subpestaña:")
+if "subpestaña" in diagnostico.columns:
+    st.write(diagnostico["subpestaña"].value_counts(dropna=False))
+
