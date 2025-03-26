@@ -12,7 +12,7 @@ PALETA_COLORES = [
 EMOCIONES = ["joy", "sadness", "surprise", "anger", "fear", "disgust"]
 TRADUCIR_EMOCIONES = {
     "joy": "Alegría", "sadness": "Tristeza", "surprise": "Sorpresa",
-    "anger": "Enojo", "fear": "Miedo", "disgust": "Disgusto"
+    "anger": "Enojo", "fear": "Miedo", "disgust": "Disgusto"}
 TRADUCIR_SENTIMIENTO = {"🔴": "Negativo", "🟡": "Neutro", "🟢": "Positivo"}
 COLORES_LINEAS = {"🔴": "#E63946", "🟡": "#F4D35E", "🟢": "#2A9D8F"}
 
