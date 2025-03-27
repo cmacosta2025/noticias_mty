@@ -12,8 +12,7 @@ PALETA_COLORES = [
 EMOCIONES = ["joy", "sadness", "surprise", "anger", "fear", "disgust"]
 TRADUCIR_EMOCIONES = {
     "joy": "Alegría", "sadness": "Tristeza", "surprise": "Sorpresa",
-    "anger": "Enojo", "fear": "Miedo", "disgust": "Disgusto"
-}
+    "anger": "Enojo", "fear": "Miedo", "disgust": "Disgusto"}
 TRADUCIR_SENTIMIENTO = {"🔴": "Negativo", "🟡": "Neutro", "🟢": "Positivo"}
 COLORES_LINEAS = {"🔴": "#E63946", "🟡": "#F4D35E", "🟢": "#2A9D8F"}
 
@@ -35,26 +34,25 @@ if df.empty:
 # ---------------------- LIMPIEZA ----------------------
 df = df.drop_duplicates(subset="url")
 df = df[df["fecha"].notna()]
+df["fecha_normalizada"] = df["fecha"].dt.normalize()
 df = df.sort_values("fecha", ascending=False)
 
 # ---------------------- FILTROS ----------------------
 st.sidebar.header("📅 Filtro de Temporalidad")
-hoy = datetime.now().date()
+hoy = pd.to_datetime(datetime.now().date())
 opciones = {
-    "Hoy": hoy,
-    "Últimos 7 días": hoy - timedelta(days=7),
-    "Últimos 30 días": hoy - timedelta(days=30),
-    "Últimos 90 días": hoy - timedelta(days=90),
-    "Histórico": None
+    "Hoy": (hoy, hoy),
+    "Últimos 7 días": (hoy - timedelta(days=7), hoy),
+    "Últimos 30 días": (hoy - timedelta(days=30), hoy),
+    "Últimos 90 días": (hoy - timedelta(days=90), hoy),
+    "Histórico": (None, None)
 }
 seleccion = st.sidebar.selectbox("Selecciona un periodo:", list(opciones.keys()))
+fecha_min, fecha_max = opciones[seleccion]
 
-# ➤ Filtro de fecha (corregido)
-if seleccion == "Hoy":
-    df = df[df["fecha"].dt.date == hoy]
-elif opciones[seleccion]:
-    fecha_min = opciones[seleccion]
-    df = df[(df["fecha"].dt.date >= fecha_min) & (df["fecha"].dt.date <= hoy)]
+# Aplicar filtro de fechas
+if fecha_min and fecha_max:
+    df = df[(df["fecha_normalizada"] >= fecha_min) & (df["fecha_normalizada"] <= fecha_max)]
 
 # ---------------------- FILTRO POR TEMA ----------------------
 st.sidebar.header("📂 Categoría")
@@ -79,7 +77,7 @@ if query:
 
 # ---------------------- RESUMEN ----------------------
 if not df.empty:
-    st.markdown(f"📅 Noticias filtradas: {df['fecha'].min().date()} → {df['fecha'].max().date()}")
+    st.markdown(f"📅 Noticias filtradas: {df['fecha_normalizada'].min().date()} → {df['fecha_normalizada'].max().date()}")
     st.markdown(f"🧮 Total de noticias mostradas: {len(df)}")
 else:
     st.warning("No hay noticias que coincidan con los filtros seleccionados.")
@@ -138,7 +136,7 @@ st.subheader("📊 Análisis de Sentimientos")
 
 if seleccion in ["Últimos 90 días", "Histórico"]:
     st.markdown("#### Sentimiento diario")
-    diario = df.groupby(["fecha", "sentimiento"]).size().unstack(fill_value=0).sort_index()
+    diario = df.groupby(["fecha_normalizada", "sentimiento"]).size().unstack(fill_value=0).sort_index()
     if not diario.empty:
         fig1, ax1 = plt.subplots(figsize=(7.5, 3.5))
         for emoji in ["🔴", "🟡", "🟢"]:
@@ -154,8 +152,8 @@ if seleccion in ["Últimos 90 días", "Histórico"]:
 
     st.markdown("#### Emociones diarias")
     if set(EMOCIONES).issubset(df.columns):
-        emociones_df = df[["fecha"] + EMOCIONES].dropna(subset=EMOCIONES, how="all")
-        diario_emociones = emociones_df.groupby("fecha")[EMOCIONES].mean().sort_index()
+        emociones_df = df[["fecha_normalizada"] + EMOCIONES].dropna(subset=EMOCIONES, how="all")
+        diario_emociones = emociones_df.groupby("fecha_normalizada")[EMOCIONES].mean().sort_index()
         if not diario_emociones.empty:
             fig3, ax3 = plt.subplots(figsize=(8, 3.5))
             for i, emocion in enumerate(EMOCIONES):
