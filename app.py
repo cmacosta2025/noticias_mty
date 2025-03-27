@@ -12,7 +12,8 @@ PALETA_COLORES = [
 EMOCIONES = ["joy", "sadness", "surprise", "anger", "fear", "disgust"]
 TRADUCIR_EMOCIONES = {
     "joy": "Alegría", "sadness": "Tristeza", "surprise": "Sorpresa",
-    "anger": "Enojo", "fear": "Miedo", "disgust": "Disgusto"}
+    "anger": "Enojo", "fear": "Miedo", "disgust": "Disgusto"
+}
 TRADUCIR_SENTIMIENTO = {"🔴": "Negativo", "🟡": "Neutro", "🟢": "Positivo"}
 COLORES_LINEAS = {"🔴": "#E63946", "🟡": "#F4D35E", "🟢": "#2A9D8F"}
 
@@ -40,18 +41,20 @@ df = df.sort_values("fecha", ascending=False)
 st.sidebar.header("📅 Filtro de Temporalidad")
 hoy = datetime.now().date()
 opciones = {
-    "Hoy": (hoy, hoy),
-    "Últimos 7 días": (hoy - timedelta(days=7), hoy),
-    "Últimos 30 días": (hoy - timedelta(days=30), hoy),
-    "Últimos 90 días": (hoy - timedelta(days=90), hoy),
-    "Histórico": (None, None)
+    "Hoy": hoy,
+    "Últimos 7 días": hoy - timedelta(days=7),
+    "Últimos 30 días": hoy - timedelta(days=30),
+    "Últimos 90 días": hoy - timedelta(days=90),
+    "Histórico": None
 }
 seleccion = st.sidebar.selectbox("Selecciona un periodo:", list(opciones.keys()))
-fecha_min, fecha_max = opciones[seleccion]
 
-# Aplicar filtro por fecha
-if fecha_min and fecha_max:
-    df = df[(df["fecha"].dt.date >= fecha_min) & (df["fecha"].dt.date <= fecha_max)]
+# ➤ Filtro de fecha (corregido)
+if seleccion == "Hoy":
+    df = df[df["fecha"].dt.date == hoy]
+elif opciones[seleccion]:
+    fecha_min = opciones[seleccion]
+    df = df[(df["fecha"].dt.date >= fecha_min) & (df["fecha"].dt.date <= hoy)]
 
 # ---------------------- FILTRO POR TEMA ----------------------
 st.sidebar.header("📂 Categoría")
