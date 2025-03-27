@@ -20,7 +20,7 @@ COLORES_LINEAS = {"🔴": "#E63946", "🟡": "#F4D35E", "🟢": "#2A9D8F"}
 @st.cache_data(show_spinner=False)
 def load_data():
     df = pd.read_csv("noticias_final_2.csv")
-    df["fecha"] = pd.to_datetime(df["fecha"], format="%Y-%m-%d", errors="coerce")
+    df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
     return df
 
 if st.sidebar.button("🔄 Recargar datos"):
@@ -40,21 +40,20 @@ df = df.sort_values("fecha", ascending=False)
 st.sidebar.header("📅 Filtro de Temporalidad")
 hoy = datetime.now().date()
 opciones = {
-    "Hoy": hoy,
-    "Últimos 7 días": hoy - timedelta(days=7),
-    "Últimos 30 días": hoy - timedelta(days=30),
-    "Últimos 90 días": hoy - timedelta(days=90),
-    "Histórico": None
+    "Hoy": (hoy, hoy),
+    "Últimos 7 días": (hoy - timedelta(days=7), hoy),
+    "Últimos 30 días": (hoy - timedelta(days=30), hoy),
+    "Últimos 90 días": (hoy - timedelta(days=90), hoy),
+    "Histórico": (None, None)
 }
 seleccion = st.sidebar.selectbox("Selecciona un periodo:", list(opciones.keys()))
+fecha_min, fecha_max = opciones[seleccion]
 
-# ➤ Filtrado por temporalidad
-if seleccion != "Histórico":
-    fecha_min = opciones[seleccion]
-    fecha_max = hoy
+# Aplicar filtro por fecha
+if fecha_min and fecha_max:
     df = df[(df["fecha"].dt.date >= fecha_min) & (df["fecha"].dt.date <= fecha_max)]
 
-# ➤ Filtro por pestaña / subpestaña
+# ---------------------- FILTRO POR TEMA ----------------------
 st.sidebar.header("📂 Categoría")
 categoria = st.sidebar.radio("Categoría:", ["Gobierno", "Alcalde", "Congreso", "Seguridad"], horizontal=True)
 
@@ -70,17 +69,18 @@ if categoria == "Gobierno":
 else:
     df = df[df["pestaña"] == categoria]
 
-# ➤ Filtro por texto
+# ---------------------- FILTRO POR TEXTO ----------------------
 query = st.sidebar.text_input("🔍 Buscar texto:")
 if query:
     df = df[df["texto_completo"].str.contains(query, case=False, na=False)]
 
-# ➤ Mostrar conteo
+# ---------------------- RESUMEN ----------------------
 if not df.empty:
     st.markdown(f"📅 Noticias filtradas: {df['fecha'].min().date()} → {df['fecha'].max().date()}")
     st.markdown(f"🧮 Total de noticias mostradas: {len(df)}")
 else:
     st.warning("No hay noticias que coincidan con los filtros seleccionados.")
+    st.stop()
 
 # ---------------------- ESTILOS Y BANNER ----------------------
 st.markdown("""
@@ -199,17 +199,3 @@ else:
 
 # ---------------------- FOOTER ----------------------
 st.sidebar.info("Desarrollado por la Dirección de Planeación, Enlace y Proyectos Estratégicos")
-
-#------
-st.markdown("### 🔍 Diagnóstico de noticias después del 12/03/2025")
-
-diagnostico = df[df["fecha"] > pd.to_datetime("2025-03-12")]
-st.write(f"📰 Noticias después del 12/03/2025: {len(diagnostico)}")
-
-st.write("📊 Conteo por pestaña:")
-st.write(diagnostico["pestaña"].value_counts(dropna=False))
-
-st.write("📊 Conteo por subpestaña:")
-if "subpestaña" in diagnostico.columns:
-    st.write(diagnostico["subpestaña"].value_counts(dropna=False))
-
